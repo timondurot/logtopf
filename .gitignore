@@ -1,0 +1,4 @@
+/logtopf
+/test/vm*/
+*.o
+__pycache__/

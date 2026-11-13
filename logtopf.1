@@ -1,0 +1,118 @@
+.Dd November 14, 2026
+.Dt LOGTOPF 1
+.Os
+.Sh NAME
+.Nm logtopf
+.Nd live terminal view of the packets pf logs
+.Sh SYNOPSIS
+.Nm
+.Op Fl h
+.Op Fl B Ar buffer_size
+.Op Ar interface
+.Sh DESCRIPTION
+.Nm
+reads the packets
+.Xr pf 4
+logs to a
+.Xr pflog 4
+interface and shows them as a live table of flows, with packet, byte and
+rate counters.
+Only traffic matched by rules with the
+.Cm log
+keyword appears, so the view stays focused on what was asked for.
+.Pp
+The
+.Ar interface
+defaults to
+.Pa pflog0 .
+Reading it needs root, or read access to
+.Pa /dev/bpf .
+.Pp
+The options are as follows:
+.Bl -tag -width Ds
+.It Fl B Ar buffer_size
+Ask for a kernel capture buffer of
+.Ar buffer_size
+KiB instead of the default 4096.
+The kernel grants at most
+.Va net.bpf.maxbufsize ,
+and
+.Nm
+warns at startup when it got less than this asked for.
+.It Fl h
+Print a short usage message and exit.
+.El
+.Pp
+Each row is a flow, keyed by source, destination, protocol, port, action
+and direction.
+The port is the lower of the source and destination ports, which is the
+service port for nearly all traffic.
+Rates are bytes per second over a two second window.
+Addresses on the subnets of the machine's own interfaces are highlighted.
+.Sh KEYS
+.Bl -tag -width "Left, Right" -compact
+.It Ic Up , Down
+Scroll.
+.It Ic Left , Right
+Change the sort column.
+.It Ic s
+Reverse the sort order.
+.It Ic x
+Clear the flow table.
+.It Ic r
+Toggle hostname resolution.
+.It Ic p
+Toggle port names.
+.It Ic c
+Toggle colour.
+.It Ic i
+Toggle highlighting of local addresses.
+.It Ic u
+Toggle between 1024-based and 1000-based units.
+.It Ic 3 , 4
+Toggle counting of IP and of TCP and UDP header bytes.
+.It Ic Ctrl-L
+Repaint the whole screen.
+.It Ic \&? , h
+Show the keys.
+.It Ic q
+Quit.
+.El
+.Sh STATUS LINE
+.Bl -tag -width "KRN" -compact
+.It Cm RX
+Packets received from the interface.
+.It Cm BUF
+How full the buffer between the capture and worker threads is.
+.It Cm KRN
+Packets the kernel dropped because its capture buffer was full.
+If this grows, raise
+.Va net.bpf.maxbufsize
+and use
+.Fl B ;
+see
+.Xr bpf 4 .
+.It Cm APP
+Packets dropped because the worker thread made no progress for two seconds.
+Should stay at 0.
+.El
+.Sh EXAMPLES
+Log incoming web traffic for every packet of the connection, and blocked
+packets on the outside interface:
+.Bd -literal -offset indent
+pass in log (all) on $lan proto tcp to port { 80 443 }
+block in log on $wan
+.Ed
+.Pp
+Plain
+.Cm log
+records only the packet that creates a state.
+.Sh SEE ALSO
+.Xr bpf 4 ,
+.Xr pf 4 ,
+.Xr pflog 4 ,
+.Xr pf.conf 5 ,
+.Xr pfctl 8 ,
+.Xr pflogd 8
+.Sh AUTHORS
+.An Timon Durot
